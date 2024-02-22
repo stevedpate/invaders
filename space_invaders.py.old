@@ -1,0 +1,208 @@
+#!/usr/local/bin/python3
+
+import pygame
+
+# Initialize pygame and set screen size. The caption is at the top
+# of the window
+
+pygame.init()
+width = 640
+height = 480
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Space Invaders (escape key to exit)")
+
+background = pygame.image.load('images/space-background.jpg')
+screen.blit(background, (0, 0))
+
+# General variables
+
+start_disp = 25
+score = 0
+
+try:
+    file = open('high_score', 'r')
+    high_score = file.read().rstrip()
+except IOError:
+    file = open('high_score', 'w')
+    file.write('0')
+    high_score = 0
+
+# Load fonts and stuff ...
+
+pygame.font.init()
+myfont = pygame.font.Font('fonts/space_invaders.ttf', 20)
+
+def display_background(bkg):
+    global y, y2
+    if (y > height):
+        y = 0
+        y2 = height * -1
+    else:
+        y += 1
+        y2 += 1
+
+    screen.blit(bkg,(0, y))
+    screen.blit(bkg,(0, y2))
+
+def update_scores():
+    title = myfont.render('SCORE', False, (255, 255, 255))
+
+    sc = len(str(score))
+    sct = '0' * (6 - len(str(score))) + str(score)
+    score_text= myfont.render(sct, False, (69, 193, 71))
+
+    high_score_hdr = myfont.render('HIGH SCORE', False, (255, 255, 255))
+    hsc = len(str(high_score))
+    hsct = '0' * (6 - len(str(high_score))) + str(high_score)
+    high_score_text = myfont.render(hsct, False, (69, 193, 71))
+
+    screen.blit(title, (10, 10))
+    screen.blit(score_text, (110, 10))
+    screen.blit(high_score_hdr, (380, 10))
+    screen.blit(high_score_text, (540, 10))
+
+# Load images of invaders. We have a list of 10 tuples. Inside each
+# tuple we store both images of the invader (legs in, legs out) and
+# its corresponding "rectangle".
+#
+# The image is larger than we want it to be so we transform it.
+
+def load_aliens(alien_type):
+    aliens = []
+    for i in range(0, 9):
+        sprite1 = pygame.image.load('images/enemy' + alien_type + '_1.png')
+        sprite2 = pygame.image.load('images/enemy' + alien_type + '_2.png')
+        
+        sprite1 = pygame.transform.scale(sprite1, (40, 35))
+        sprite2 = pygame.transform.scale(sprite2, (40, 35))
+    
+        sprite_rect = sprite1.get_rect()
+        sprite_rect.centerx = (50 + i * 50)
+        sprite_rect.centery = (height / 2 - (int(alien_type) * 40))
+        screen.blit(sprite1, sprite_rect)
+        
+        aliens.append((sprite1, sprite2, sprite_rect))
+    return aliens
+
+invaders = []
+invaders.append(load_aliens('1'))
+invaders.append(load_aliens('2'))
+invaders.append(load_aliens('3'))
+
+ship = pygame.image.load('images/ship2.png')
+ship = pygame.transform.scale(ship, (40, 35))
+ship_rect = ship.get_rect()
+ship_rect.centerx = width / 2
+ship_rect.centery = height - 30
+screen.blit(ship, ship_rect)
+
+# set up background
+
+background = pygame.image.load('images/space-background.jpg')
+background_size = background.get_size()
+screen = pygame.display.set_mode(background_size)
+y = 0
+y2 = height * -1
+
+# initial position of sprite, center of screen
+
+pygame.display.flip()
+
+clock = pygame.time.Clock()
+
+# create the obligatory event loop
+
+alien = 0
+disp = 0
+disp_interval = start_disp
+
+lr = 0		# left to right ....
+adjust = 2
+
+lradj = 70
+
+als1 = pygame.mixer.Sound('sounds/0.wav')
+als1.set_volume(0.5)
+als2 = pygame.mixer.Sound('sounds/1.wav')
+als2.set_volume(0.5)
+
+pygame.mixer.pre_init(44100, -16, 1, 4096)
+
+background_timer = 0
+
+while 1:
+    clock.tick(60)                  # limit runtime speed to 30 FPS XXX really?
+
+    keyinput = pygame.key.get_pressed()
+    if keyinput[pygame.K_ESCAPE]:
+        raise SystemExit
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            raise SystemExit
+
+    pressed = pygame.key.get_pressed()
+
+    # Handle the ship
+
+    if pressed[pygame.K_z]:
+        ship_rect.centerx -= 3
+        ship_rect.centerx = max(25, ship_rect.centerx)
+    if pressed[pygame.K_x]:
+        ship_rect.centerx += 3
+        ship_rect.centerx = min(width - 26, ship_rect.centerx)
+
+    disp += 1
+    if disp % disp_interval == 0:
+
+        score += 1 # XXX
+
+        # Now handle the alien positions
+
+        if alien == 0:
+            alien = 1
+        else:
+            alien = 0
+        for alt in range(0, 3):
+            for i in range(0, 9):
+                (sprite1, sprite2, sprite_rect) = invaders[alt][i]
+                sprite_rect.centerx += adjust
+                if lr == lradj - 1:
+                    sprite_rect.centery += 10
+                if alien == 0:
+                    screen.blit(sprite1, sprite_rect)
+                    als2.stop()
+                    als1.play()
+                else:
+                    screen.blit(sprite2, sprite_rect)
+                    als1.stop()
+                    als2.play()
+                    
+        lr += 1
+        if lr == lradj:
+            lr = 0
+            adjust = adjust * -1
+            disp_interval -= 5
+            disp_interval = max(5, disp_interval)
+
+    # Now draw everything XXX only if ship moves and invaders need to change
+
+    #background_timer += 1
+    #if background_timer == 5:
+        #background_timer = 0
+        #display_background(background)
+
+    screen.blit(background, (0, 0))
+    screen.blit(ship, ship_rect)
+
+    for alt in range(0, 3):
+        for i in range(0, 9):
+            (sprite1, sprite2, sprite_rect) = invaders[alt][i]
+            if alien == 0:
+                screen.blit(sprite1, sprite_rect)
+            else:
+                screen.blit(sprite2, sprite_rect)
+
+    update_scores()
+    pygame.display.flip()

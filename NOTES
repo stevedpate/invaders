@@ -1,0 +1,239 @@
+
+Groups
+------
+
+Here's what we have:
+
+	self.all_sprites_list = pygame.sprite.Group()
+	self.invaders = pygame.sprite.Group()
+	self.invader_bombs = pygame.sprite.Group()
+	self.barriers = pygame.sprite.Group()
+
+Speed of the game
+-----------------
+
+In Game instantiation we have:
+
+	self.last_invader_move = pygame.time.get_ticks()
+
+This is checked during main_loop:
+
+	time_now = pygame.time.get_ticks()
+    if (time_now - self.last_invader_move) > self.speed:
+
+if we've passed the checked amount of time we move the aliens and move the
+alien bombs (TBD). Everything else (ship move, ship laser etc) are checked every loop.
+
+The main loop (main_loop)
+-------------------------
+
+Invader.update
+	
+
+Game class
+
+	variables
+
+		self.left_most - left most column in vposition that has something in it
+		self.right_most - right most column in vposition that has something in it
+	
+	adjust_lr				- used to adjust the number of moves if we took out LHS or RHS
+		-> calc_switch
+		-> update.moves		-> call Invader.update.moves
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------
+
+invader_block = [ [ i1, i2, i3, i4, i5, i6, i7, i8, i9 ],
+                  [ i1, i2, i3, i4, i5, i6, i7, i8, i9 ],
+                  [ i1, i2, i3, i4, i5, i6, i7, i8, i9 ],
+                  [ i1, i2, i3, i4, i5, i6, i7, i8, i9 ],
+                  [ i1, i2, i3, i4, i5, i6, i7, i8, i9 ],
+                ]
+
+self.vposition = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
+
+so:
+
+	1. pick a random number for the column
+	2. invader = invader_block[self.lowest_invader[rn]] - but need to check to make sure col ! empty
+
+-----
+
+STARTING_POSITION = 500
+
+	self.rect.x = 10 + (column * 50)
+    self.rect.y = (STARTING_POSITION / 2) + (wave * 50) - (row * 40)
+
+We move them:
+
+	MOVE_INCREASE * multiplier (1 or -1)	# multiplier starts as "1"
+
+but multiplier is defined as local to Invader
+
+and also local is:
+
+        self.hposition = row
+        self.vposition = column
+
+and both get updated on "def update"
+
+
+
+We get:
+
+(0, 0) = ( 10, 300)	
+(0, 1) = ( 60, 300)	
+(0, 2) = (110, 300)	
+(0, 3) = (160, 300)	
+(0, 4) = (210, 300)	
+(0, 5) = (260, 300)	
+(0, 6) = (310, 300)	
+(0, 7) = (360, 300)	
+(0, 8) = (410, 300)	
+(0, 9) = (460, 300)	
+(1, 0) = ( 10, 260)	
+(1, 1) = ( 60, 260)	
+(1, 2) = (110, 260)	
+(1, 3) = (160, 260)	
+(1, 4) = (210, 260)	
+(1, 5) = (260, 260)	
+(1, 6) = (310, 260)	
+(1, 7) = (360, 260)	
+(1, 8) = (410, 260)	
+(1, 9) = (460, 260)	
+(2, 0) = ( 10, 220)	
+(2, 1) = ( 60, 220)	
+(2, 2) = (110, 220)	
+(2, 3) = (160, 220)	
+(2, 4) = (210, 220)	
+(2, 5) = (260, 220)	
+(2, 6) = (310, 220)	
+(2, 7) = (360, 220)	
+(2, 8) = (410, 220)	
+(2, 9) = (460, 220)	
+(3, 0) = ( 10, 180)	
+(3, 1) = ( 60, 180)	
+(3, 2) = (110, 180)	
+(3, 3) = (160, 180)	
+(3, 4) = (210, 180)	
+(3, 5) = (260, 180)	
+(3, 6) = (310, 180)	
+(3, 7) = (360, 180)	
+(3, 8) = (410, 180)	
+(3, 9) = (460, 180)	
+(4, 0) = ( 10, 140)	
+(4, 1) = ( 60, 140)	
+(4, 2) = (110, 140)	
+(4, 3) = (160, 140)	
+(4, 4) = (210, 140)	
+(4, 5) = (260, 140)	
+(4, 6) = (310, 140)	
+(4, 7) = (360, 140)	
+(4, 8) = (410, 140)	
+(4, 9) = (460, 140)
+
+--------------------------------------------------------------------------------
+
+Let's assume we shot all of column 0. We'll have:
+
+    [0, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+     ^                          ^
+     |                          |
+self.left_most           self.right_most
+
+so when we call adjust_lr(column == 0):
+
+    column == self.left_most
+
+we can then set:
+
+    column += 1
+
+and call update_moves(left=True, right=False, multiplier=1)
+
+--------------------------------------------------------------------------------
+
+Let's assume we shot all of column 0 but we'd already taken out column 1. 
+We'll have:
+
+    [0, 0, 3, 3, 3, 3, 3, 3, 3, 3]
+     ^                          ^
+     |                          |
+self.left_most           self.right_most
+
+so when we call adjust_lr(column == 0):
+
+    column !== self.left_most
+
+we need to set:
+
+    column = 2
+
+and call update_moves(left=True, right=False, multiplier=2)
+
+We'll need to loop:
+
+    for i in range(self.left_most + 1, len[]):
+        if XXX
+        
+--------------------------------------------------------------------------------
+What I have now is:
+
+    self.vposition = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
+
+which works for left/right detection but not for bullets. If we decrement
+one of these values when an alien is hit, it doesn't tell us if we've removed
+the bottom most layer which won't help with where the bullets come from.
+
+I also track left/right movements within the Invader class. I should do it at the higher layer.
+
+So switch to:
+
+        invader_block = [ [1, 1, 1, 1, 1, 1, 1, 1],
+                          [1, 1, 1, 1, 1, 1, 1, 1],
+                          [1, 1, 1, 1, 1, 1, 1, 1],
+                          [1, 1, 1, 1, 1, 1, 1, 1] ]
+
+and each invader has an (x, y) coordinate as follows:
+
+    invader1 = (x, y) = (3, 0)  # bottom left
+
+but that doesn't tell me if an invader is at the bottom (re: bullets)
+
+To create an invader, call as follows:  - XXX why left and right?
+
+    invader = Invader((3,0), bottom=True, left=True, right=False)
+
+We know left/right/bottom while we're creating an invader. Initially we have:
+
+    Game.left_column = 0
+    Game.right_column = 9                   # assuming 10 aliens
+    Game.bottom_row = 3                     # Initially
+    Game.total_moves = DEFAULT_MOVES        # move the block left or right. 
+    Game.moves = 0                          # initially and each drop
+    Game.direction = 'right'
+    Game.number_invaders = 50               # Initially
+
+So if we call:
+
+    Invader.update(Game.bottom, move='right' or move='left')
+
+that's all we need. The Invader update() function can simply do:
+
+    if move == 'left':
+        self.rect.x -= move_amount
+    else if move == 'right':
+        self.rect.x += move_amount
+    else:
+        don't move                  # we collided with the ship - XXX valid?
+
